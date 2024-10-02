@@ -1,8 +1,9 @@
 from pkg.plugin.models import *
 from pkg.plugin.host import EventContext, PluginHost
+from pkg.plugin.context import register, handler, llm_func, BasePlugin, APIHost, EventContext
+from pkg.plugin.events import *  # 导入事件类
 
 import requests
-import random
 
 from mirai import Image
 import logging
@@ -10,39 +11,31 @@ import traceback
 
 
 # 注册插件
-@register(name="Nahida", description="Hello Nahida", version="0.1", author="RockChinQ")
-class NahidaPlugin(Plugin):
+@register(name="News60s", description="Hello News60s", version="0.1", author="RockChinQ")
+class News60sPlugin(BasePlugin):
 
-    images_urls: list[str] = []
+    # API URL
+    image_api_url = "https://api.andeer.top/API/60s.php"
+
     # 插件加载时触发
-    # plugin_host (pkg.plugin.host.PluginHost) 提供了与主程序交互的一些方法，详细请查看其源码
-    def __init__(self, plugin_host: PluginHost):
-        json_resp = requests.get(
-            url="https://api.github.com/repos/RockChinQ/NahidaImages/contents/images",
-        )
-        obj_json = json_resp.json()
+    def __init__(self, host: APIHost):
+        pass
 
-        for item in obj_json:
-            self.images_urls.append(item["download_url"])
-
-        
-    @on(PersonMessageReceived)
-    @on(GroupMessageReceived)
-    def _(self, event: EventContext, host: PluginHost, message_chain, **kwargs):
+    @handler(PersonNormalMessageReceived)
+    @handler(GroupNormalMessageReceived)
+    async def _(self, event: EventContext):
         try:
-            text = str(message_chain).strip()
-            if text == "nahida" or text == "nhd":
+            text = event.event.text_message
+            if text == "news60s" or text == "60s":
                 event.prevent_default()
                 event.prevent_postorder()
                 # 发送图片
-                image_url = random.choice(self.images_urls)
-                
-                if kwargs["launcher_type"] == "group":
-                    host.send_group_message(kwargs["launcher_id"], [Image(url=image_url)])
+                response = requests.get(self.image_api_url)
+                if response.ok:  # 使用 response.ok 来检查请求是否成功
+                    event.add_return("reply", [Image(url=response.url)])
                 else:
-                    host.send_person_message(kwargs["launcher_id"], [Image(url=image_url)])
-
-                logging.info("Nahida!")
+                    event.add_return("reply", ["图片获取失败，请稍后再试。"])
+                logging.info("News60s!")
         except Exception as e:
             logging.error(traceback.format_exc())
 
