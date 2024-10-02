@@ -11,7 +11,7 @@ import traceback
 
 
 # 注册插件
-@register(name="News60s", description="Hello News60s", version="0.1", author="RockChinQ")
+@register(name="News60s", description="Hello News60s", version="0.1", author="max")
 class News60sPlugin(BasePlugin):
 
     # API URL
